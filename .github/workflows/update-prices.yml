@@ -1,1 +1,91 @@
+# Update Fuel Prices
+#
+# Runs by itself twice a day on the 1st to 5th of every month, when Bahrain
+# announces new fuel prices. It publishes only when two news sites agree.
+# If it cannot confirm the prices by the 3rd, it opens an issue, which
+# GitHub emails to you.
+#
+# To publish prices yourself at any time: Actions tab > Update Fuel Prices >
+# Run workflow, then type the four prices.
+
+name: Update Fuel Prices
+
+on:
+  schedule:
+    - cron: "0 5,17 1-5 * *"   # 08:00 and 20:00 Bahrain time
+  workflow_dispatch:
+    inputs:
+      jayyid91:
+        description: "Jayyid 91 price in BHD, for example 0.225 (leave all four empty to let the robot check the news)"
+        required: false
+        default: ""
+      mumtaz95:
+        description: "Mumtaz 95 price in BHD"
+        required: false
+        default: ""
+      super98:
+        description: "Super 98 price in BHD"
+        required: false
+        default: ""
+      diesel:
+        description: "Diesel price in BHD"
+        required: false
+        default: ""
+      effective_date:
+        description: "Start date, for example 2026-10-02 (leave empty for the 2nd of this month)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: fuel-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the files
+        uses: actions/checkout@v5
+
+      - name: Check the tests still pass
+        run: python3 -m unittest test_update_prices
+
+      - name: Update the price feed
+        id: update
+        env:
+          IN_JAYYID91: ${{ github.event.inputs.jayyid91 }}
+          IN_MUMTAZ95: ${{ github.event.inputs.mumtaz95 }}
+          IN_SUPER98: ${{ github.event.inputs.super98 }}
+          IN_DIESEL: ${{ github.event.inputs.diesel }}
+          IN_EFFECTIVE_DATE: ${{ github.event.inputs.effective_date }}
+        run: python3 update_prices.py
+
+      - name: Publish changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v1
+          if git diff --staged --quiet; then
+            echo "No change this run."
+          else
+            git commit -m "Update fuel prices"
+            git push
+          fi
+
+      - name: Ask the owner to confirm prices
+        if: steps.update.outputs.needs_attention == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ steps.update.outputs.issue_title }}
+        run: |
+          open_issue=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number')
+          if [ -z "$open_issue" ]; then
+            gh issue create --title "$TITLE" --body-file attention.md
+          else
+            echo "Issue #$open_issue is already open."
+          fi
 
