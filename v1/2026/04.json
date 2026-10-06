@@ -1,0 +1,13 @@
+{
+  "apiVersion": 1,
+  "country": "BH",
+  "currency": "BHD",
+  "month": "2026-04",
+  "effectiveDate": "2026-04-02",
+  "prices": {
+    "jayyid91": 0.223,
+    "mumtaz95": 0.253,
+    "super98": 0.314,
+    "diesel": 0.22
+  }
+}

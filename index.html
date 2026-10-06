@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Banzeen: Fuel Cost Planner for Bahrain</title>
+  <meta name="description" content="Banzeen shows Bahrain's official fuel prices and tells you what a trip or a full tank will cost for your car.">
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="Banzeen app icon">
+    <a href="./">Banzeen</a>
+  </header>
+
+  <h1>Know what your fuel will cost before you drive.</h1>
+  <p>Banzeen is an iPhone app for drivers in Bahrain. It shows the official monthly fuel
+  prices, saves your car, and tells you what a trip or a full tank will cost.
+  It works in English and Arabic, in light and dark mode, and without an account.</p>
+
+  <h2>Today's official prices</h2>
+  <div class="prices" id="prices">
+    <div class="price">Jayyid 91<b>0.235</b><span class="muted">BHD per litre</span></div>
+    <div class="price">Mumtaz 95<b>0.277</b><span class="muted">BHD per litre</span></div>
+    <div class="price">Super 98<b>0.410</b><span class="muted">BHD per litre</span></div>
+    <div class="price">Diesel<b>0.260</b><span class="muted">BHD per litre</span></div>
+  </div>
+  <p class="muted" id="effective">Effective 2 October 2026. Set monthly by Bahrain's Fuel Price Committee.</p>
+
+  <h2>Open price data</h2>
+  <p>The prices Banzeen uses are free for anyone at
+  <a href="v1/latest.json">v1/latest.json</a>. They are checked against two news
+  sites before they are published.</p>
+
+  <nav>
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <a href="support.html">Help and Support</a>
+  </nav>
+</main>
+<script>
+  // Show the live prices from the feed when the page loads.
+  fetch("v1/latest.json", { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (feed) {
+      var names = { jayyid91: "Jayyid 91", mumtaz95: "Mumtaz 95", super98: "Super 98", diesel: "Diesel" };
+      var box = document.getElementById("prices");
+      box.innerHTML = "";
+      feed.prices.forEach(function (p) {
+        var div = document.createElement("div");
+        div.className = "price";
+        div.textContent = names[p.fuelType] || p.fuelType;
+        var b = document.createElement("b");
+        b.textContent = p.pricePerLiter.toFixed(3);
+        var s = document.createElement("span");
+        s.className = "muted";
+        s.textContent = "BHD per litre";
+        div.appendChild(b);
+        div.appendChild(s);
+        box.appendChild(div);
+      });
+      var d = new Date(feed.effectiveDate + "T00:00:00");
+      var when = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      document.getElementById("effective").textContent =
+        "Effective " + when + ". Set monthly by Bahrain's Fuel Price Committee.";
+    })
+    .catch(function () { /* keep the prices written above */ });
+</script>
+</body>
+</html>
